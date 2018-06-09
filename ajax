@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+<style>
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    text-align: left;
+    padding: 2px;
+
+}
+
+th {
+    background-color: green;
+    color: white;
+	margin:4px;
+}
+tr:hover {background-color: #aaff83;
+}
+
+button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 5px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 13px;
+    margin: 0 3px;
+    cursor: pointer;
+	border-radius: 25px;
+}
+button:hover {
+    background-color: red;
+    color: white;
+}
+input[type=text] {
+    width: 230px;
+    -webkit-transition: width 0.4s ease-in-out;
+    transition: width 0.4s ease-in-out;
+    border: none;
+    border-bottom: 3px solid green;
+}
+input[type=text]:focus {
+    width: 20%;
+}
+h1 {
+    text-align: center;
+    text-transform: uppercase;
+    color: 	#006400;
+	font-family: "serif";
+}
+p {
+    text-indent: 50px;
+    text-align: center;
+    letter-spacing: 2px;
+}
+</style>
+<body>
+<h1>FOOD HYGIENE RATING</h1>
+<p> The following page has the information for all businesess that are currently in Canterbury.
+<br>
+You are able to search for a business, browse through all businesess and get the rating for that business</p>
+<div>
+<div id ="buttons" align="center">pages:</div>
+<br>
+<form id = 'submit' align="center">
+<input id="myInput" type='text' value ="" placeholder="find businesses"/>
+<button id="k" type="submit">submit</button>
+</form>
+<br>
+<table>
+  <tbody>
+  <th>Business</th>
+  <th>Address</th>
+  <th>Hygiene</th>
+  <th>Date</th>
+  <th>Rating</th>
+  </tbody>
+  <tbody id="myTable">
+  </tbody>
+</table>
+
+</div>
+<body>
+<script>
+$(document).ready(function(){
+
+    $(function(){
+	
+ //PART 1 -> task 1.1  
+ 
+/* This takes in the JSON data for the first page ( as a default)
+ * This runs a each loop where the JSON data is stored in a table row is appended to the empty table by the function add
+ * The result of this will be a populated table
+ */ 
+			$.get("https://www.cs.kent.ac.uk/people/staff/lb514/hygiene/hygiene.php?op=retrieve&page=1", function( data )
+			{			
+            $.each(data, function (i,user){  			  
+			 $('<tr>', { html: add(user) }).appendTo($("#myTable")); 
+              });
+            },"JSON");		
+
+// function add(user) populates the table			
+			
+            function add(user)                  
+			{  
+              return '<td class = "business">'+user.business + '</td> <td> ' + user.address + ' </td><td>' + user.rating+'</td><td>' + user.date+
+			          '</td><td><button data-Postcode="' + (user.postcode) +'">rating</button></td>';
+            }
+
+//PART 1 -> task 1.2 
+
+/*Takes in the JSON data of the number of pages
+ * Runs a for loop with generating buttons with the amount of pages available and appends it to a div called buttons
+ * there are 15 pages so returns 15 buttons
+ */ 
+		
+		
+			$.get("https://www.cs.kent.ac.uk/people/staff/lb514/hygiene/hygiene.php?op=pages", function( data ) {	
+              $.each(data, function (index,NumPage){
+               for(var i=1;i<= NumPage;i++){			                            
+			  $('<button id ='+i+'>'+i+'</button>').appendTo($("#buttons"));
+	         }});
+            },"JSON");
+			
+			
+			
+/* This gets the id of the button and calls the page with that JSON data 
+ * empties the table if populated and runs the add function to populate the table with the new table data 
+ * The result of this will be a populated table
+ */			
+ 
+ 
+  
+		  $("#buttons").on("click", "button", function(){						   																				   
+             var id = ($(this).attr('id'));									       
+		      $('#myTable').empty();											   
+		         $.get("https://www.cs.kent.ac.uk/people/staff/lb514/hygiene/hygiene.php?op=retrieve&page="+id, function( data ) {
+                $.each(data, function (i,user){			 
+			   $('<tr>', { html: add(user) }).appendTo($("#myTable"));             
+	          });			  
+             },"JSON");	  
+           });
+    
+	
+//PART 2  -> task 2.1 
+
+/* stores the JSON postcode data from identifier data-Postcode
+ * stores the text from the id business in the table row
+ * this gets the JSON data with the name of that business, then matches the business by comparing the postcode then gives the correct business rating
+ */ 
+		
+	  $("#myTable").on("click", "button", function() {
+	  var found;														   
+	  var postcode = $(this).attr('data-Postcode');                       
+      var BusinessRating = $(this).closest("tr")                                     
+                        .find(".business")                                       
+                        .text();                                          
+						
+	  $.get("https://www.cs.kent.ac.uk/people/staff/lb514/hygiene/rating.php?name="+BusinessRating, function( data ) {
+	     $.each(data, function(index,value){
+	       if (value.address.match(postcode)){							  	
+	        found = true;
+	        alert("The rating for "+value.business +" at " + postcode+ " is  " +value.rating);
+	        }	  
+	      });
+	  if(!found){alert("no rating currently");} 						  
+       },"JSON");
+    });	 
+	
+	
+//PART 3  -> task 3.1  
+
+// runs the function autocomplete of the search input, by using the array business as the source
+
+
+ var business = ["A La Turka","Abode Hotel","Active Life Limited","ASK Italian"];		
+ 
+		$('#myInput').autocomplete({              	          
+			source: business,                               
+			open: function( event, ui ) {}                  
+		});
+
+		
+/*  gets the value that is in the search input after being submitted
+ *  checks whether the input is empty 
+ *  empties the table and populates the table with similar/same business name
+ *  gives an alert if input is empty/there are no businesess with that name or populates the table and adds the returned businesess to the array business
+ */		
+		
+		
+	    $("#submit").on("click", "button", function(e) {      
+            e.preventDefault();                             
+		    var query = $("#myInput").val();                
+		  
+		 if(query.length==0)                                
+		  {
+		     alert("You haven't entered anything");	
+		  } 
+		  else {                                            
+		  $('#myTable').empty();					        
+		    $.get("https://www.cs.kent.ac.uk/people/staff/lb514/hygiene/hygiene.php?op=searchname&name="+query, function( result ) 
+			{			
+             if(result.length==0){alert("There are no businesess with the name: "+query);}			
+             $.each(result, function (index,searchVal)
+			 {			 
+			     $('<tr>', { html: add(searchVal) }).appendTo($("#myTable"));
+			    // business.push(searchVal.business);												
+			    //$.uniqueSort(business); 	            // Would use this but doesn't work on all browsers
+				if (business.indexOf(searchVal.business) === -1) {
+                   business.push(searchVal.business);
+                  }		  											    
+		     });	       	   
+		    },"JSON");	
+		   $('#myInput').val('');															   
+		  }		 													
+        });
+  });
+});
+</script>
+</head>
+
+</body>
+</html>
